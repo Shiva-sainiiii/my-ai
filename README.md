@@ -50,23 +50,25 @@ reliably kaam nahi karega.
 | Cloudflare Workers AI | dash.cloudflare.com (Account ID) + API Token with Workers AI:Edit | 10,000 neurons/day shared pool | ❌ **Nahi** — account-level limit |
 | Pollinations | koi key nahi chahiye (ya sk_ key free milta hai enter.pollinations.ai se) | ~4 rpm anonymous (watermarked); sk_ key se zyada aur bina watermark | ✅ Haan, agar alag keys ho |
 
-**⚠️ Bahut important — "multi-key rotation" sabhi providers pe kaam nahi karta:**
+**⚠️ Bahut important — "multi-key rotation" sirf tab kaam karta hai jab keys
+genuinely separate accounts se ho:**
 
 Groq, Google AI Studio, aur Cloudflare — teeno ki free-tier limit **account/project
-level** pe lagti hai, per-key nahi. Matlab agar aap ek hi Groq account se 3 API
-keys banate ho aur teeno gateway me daal do, wo teeno **same 30 rpm / 1000 rpd
-bucket share karengi** — koi extra headroom nahi milega, sirf ek extra failed
-request hoga jab pehli key exhaust ho jayegi.
+level** pe lagti hai, per-key nahi. Ek hi account se banayi gayi multiple keys
+**same bucket share karengi** — koi extra headroom nahi milega.
 
-Isliye ye gateway automatically detect karta hai (`orgLevelLimit` flag registry
-me) aur in providers ke liye **sirf pehli configured key hi try karta hai** —
-baaki ignore kar deta hai, taaki time waste na ho.
+Is repo me `orgLevelLimit: false` set hai in teeno providers ke liye, kyunki
+current setup me har provider ke 4 configured keys **4 genuinely separate
+accounts** se hain (user-verified — code khud ye verify nahi kar sakta).
+Isi wajah se `router.js` in teeno providers ki saari 4 keys try karta hai,
+sirf pehli wali nahi.
 
-**Agar aapko in providers pe genuinely zyada headroom chahiye**, to har key
-ek **alag account/email** se banao (Groq/Google: alag Google/email signup;
-Cloudflare: alag Cloudflare account) — tab hi rotation se fayda hoga. Sirf
-OpenRouter aur Pollinations (with sk_ key) pe same-account multiple keys se
-bhi kaam chalega — waise unme bhi alag accounts better hi rahenge.
+**Agar future me kisi provider me ek naya key add karna ho:** wo zaroor ek
+**bilkul nayi account** se hona chahiye — kisi existing account ki dusri key
+nahi. Agar galti se same-account ki do keys registry me aa gayin, to woh
+dono ek hi bucket share karengi aur aapko sirf extra 429 errors milenge,
+real headroom nahi. Aisi situation me us provider ka `orgLevelLimit` wapas
+`true` kar dena taaki gateway sirf ek key try kare.
 
 ### 3. Master key generate karo
 ```bash
