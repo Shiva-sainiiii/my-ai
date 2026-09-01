@@ -1,5 +1,6 @@
 const { checkMasterKey } = require("../../../lib/auth");
 const { REGISTRY } = require("../../../lib/registry");
+const { applyCors } = require("../../../lib/cors");
 
 /**
  * GET /api/v1/models
@@ -8,6 +9,8 @@ const { REGISTRY } = require("../../../lib/registry");
  * Useful for a dashboard, or just to sanity-check your setup.
  */
 export default async function handler(req, res) {
+  if (applyCors(req, res)) return;
+
   const auth = checkMasterKey(req);
   if (!auth.ok) {
     return res.status(auth.status).json({ error: auth.message });
