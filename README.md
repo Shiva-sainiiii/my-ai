@@ -6,6 +6,32 @@ vision, image-generation, sab kuch. Jab ek provider/key ka daily ya per-minute
 limit hit ho jaaye, gateway automatically agla available key ya provider try
 karta hai — koi manual switching nahi.
 
+## Is version me kya sudhara (UI pass)
+
+Backend (`lib/`, `pages/api/`) same hai — sirf `pages/index.js` UI poori tarah
+rewrite hui hai:
+
+- **Vision testing fix**: "Vision" category select karne pe ab image upload
+  field dikhta hai (tap-to-upload + drag-drop, preview, remove button). Image
+  automatically base64 data URL me convert hoke request ke saath OpenAI-style
+  multi-part `content` array me jaata hai — backend ka format already yahi
+  expect karta tha, sirf UI se koi rasta nahi tha image bhejne ka.
+- **Documentation fix**: "Use from anywhere" section ab tabs ke saath saari 4
+  categories (Text, Vision, Multilingual, Image Gen) ka curl example dikhata
+  hai, har ek ke saath ek-line note ki us category ka request/response shape
+  baaki se kaise alag hai. Copy button bhi add kiya.
+- **Mobile responsive**: purani UI fixed-width inline `gridTemplateColumns`
+  table use karti thi jo chhoti screen pe toot jaati thi. Ab real CSS
+  (`styles/globals.css`) hai — category picker ek segmented control hai (no
+  dropdown-hunting on mobile), model list cards me hai (table nahi), sab kuch
+  320px se upar properly stack/wrap karta hai.
+- UI/UX polish: loading spinners, disabled states jab tak required fields
+  (master key, image jab vision selected ho) na bhare ho, error messages
+  saaf dikhte hain, focus states keyboard users ke liye.
+
+Agar aage router/registry/adapters me changes chahiye (naye providers, model
+list update, etc.) wo is pass me nahi chhue gaye — sirf UI improve hui hai.
+
 ## Kaise kaam karta hai
 
 ```
