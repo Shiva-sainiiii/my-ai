@@ -9,11 +9,18 @@ const { routeRequest } = require("../../../../lib/router");
  * Body:
  * {
  *   "messages": [{ "role": "user", "content": "hello" }],
- *   "category": "text" | "vision" | "multilingual",   // default: "text"
+ *   "category": "text" | "vision" | "multimodal",        // default: "text"
  *   "provider": "groq" | "openrouter" | "google_ai_studio" | "cloudflare", // optional, force a provider
  *   "model": "specific-model-id",                       // optional, force a model
  *   "sort_by": "contextWindow" | "maxOutputTokens"       // optional, default "contextWindow"
  * }
+ *
+ * "vision" routes across every vision-capable model. "multimodal" is a
+ * curated subset — single models that natively do text+image in / text
+ * out as a first-class feature (currently qwen/qwen3.6-27b on Groq,
+ * plus the same Gemini/OpenRouter/Cloudflare vision models). Use
+ * "vision" for the widest fallback pool, "multimodal" if you
+ * specifically want one of the do-everything models.
  *
  * Vision requests: use OpenAI's standard multi-part content format:
  *   { "role": "user", "content": [

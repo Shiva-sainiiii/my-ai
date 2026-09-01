@@ -3,14 +3,17 @@ import { useState, useEffect, useRef, useCallback } from "react";
 const CATEGORIES = [
   { id: "text", label: "Text" },
   { id: "vision", label: "Vision" },
-  { id: "multilingual", label: "Multilingual" },
+  { id: "multimodal", label: "Multimodal" },
   { id: "image_gen", label: "Image Gen" },
 ];
+
+// Categories whose test needs an image attached alongside the prompt.
+const IMAGE_CATEGORIES = ["vision", "multimodal"];
 
 const DEFAULT_PROMPTS = {
   text: "Hello! Which model are you?",
   vision: "What's in this image?",
-  multilingual: "Translate 'good morning' into French, Japanese, and Hindi.",
+  multimodal: "What's in this image, and can you also summarize it in one sentence?",
   image_gen: "A lighthouse at dusk, watercolor style",
 };
 
@@ -40,13 +43,19 @@ function buildSnippet(category, origin, masterKey) {
     }]
   }'`;
   }
-  if (category === "multilingual") {
+  if (category === "multimodal") {
     return `curl ${origin}/api/v1/chat/completions \\
   -H "Authorization: Bearer ${key}" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "category": "multilingual",
-    "messages": [{ "role": "user", "content": "Translate good morning into French, Japanese, and Hindi" }]
+    "category": "multimodal",
+    "messages": [{
+      "role": "user",
+      "content": [
+        { "type": "text", "text": "What is in this image, and summarize it in one sentence?" },
+        { "type": "image_url", "image_url": { "url": "data:image/jpeg;base64,<BASE64_DATA>" } }
+      ]
+    }]
   }'`;
   }
   return `curl ${origin}/api/v1/chat/completions \\
@@ -60,8 +69,8 @@ function buildSnippet(category, origin, masterKey) {
 
 const CATEGORY_NOTES = {
   text: "Plain chat completion. Routes across every text-capable model, biggest context window first.",
-  vision: "Send an image alongside your prompt using OpenAI's multi-part content format — a text part plus an image_url part with a base64 data URL. Only routes to vision-tagged models.",
-  multilingual: "Same endpoint as text, filtered to models tagged strong at multilingual output.",
+  vision: "Send an image alongside your prompt using OpenAI's multi-part content format — a text part plus an image_url part with a base64 data URL. Routes across every vision-capable model.",
+  multimodal: "Same request shape as vision, but routes only to models where text+image is a native, first-class feature of one single model (currently Qwen 3.6 27B on Groq, plus the multimodal Gemini/OpenRouter/Cloudflare models) — for tasks that lean on a model doing both understanding and reasoning together, not just OCR-style Q&A.",
   image_gen: "Separate endpoint — returns a base64 PNG instead of a chat message. Response shape differs from the other three categories.",
 };
 
@@ -105,7 +114,7 @@ export default function Home() {
     if (Object.values(DEFAULT_PROMPTS).includes(testPrompt)) {
       setTestPrompt(DEFAULT_PROMPTS[cat]);
     }
-    if (cat !== "vision") {
+    if (!IMAGE_CATEGORIES.includes(cat)) {
       clearImage();
     }
   }
@@ -173,7 +182,7 @@ export default function Home() {
         });
       } else {
         const content =
-          testCategory === "vision" && imageDataUrl
+          IMAGE_CATEGORIES.includes(testCategory) && imageDataUrl
             ? [
                 { type: "text", text: testPrompt },
                 { type: "image_url", image_url: { url: imageDataUrl } },
@@ -215,7 +224,7 @@ export default function Home() {
     }
   }
 
-  const needsImage = testCategory === "vision";
+  const needsImage = IMAGE_CATEGORIES.includes(testCategory);
   const canRunTest = masterKey && (!needsImage || imageDataUrl) && testPrompt.trim();
   const activeModelCount = models?.data?.filter((m) => m.active).length ?? null;
 
@@ -374,7 +383,7 @@ export default function Home() {
             {loading ? "Running..." : "Send test request"}
           </button>
           {needsImage && !imageDataUrl && (
-            <p className="muted" style={{ marginTop: 8 }}>Upload an image to test vision.</p>
+            <p className="muted" style={{ marginTop: 8 }}>Upload an image to run this test.</p>
           )}
 
           {testResult && (

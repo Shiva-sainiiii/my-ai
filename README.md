@@ -6,31 +6,67 @@ vision, image-generation, sab kuch. Jab ek provider/key ka daily ya per-minute
 limit hit ho jaaye, gateway automatically agla available key ya provider try
 karta hai — koi manual switching nahi.
 
-## Is version me kya sudhara (UI pass)
+## Round 2: vision 503 fix + registry correction + multimodal category
 
-Backend (`lib/`, `pages/api/`) same hai — sirf `pages/index.js` UI poori tarah
-rewrite hui hai:
+**Root cause of vision returning 503 (all providers exhausted):** Groq had
+deprecated BOTH of its vision candidates server-side —
+`meta-llama/llama-4-scout-17b-16e-instruct` (deprecated Jun 17, 2026) and
+`meta-llama/llama-4-maverick-17b-128e-instruct` (deprecated Feb 20, 2026).
+Every call to them failed instantly since the model IDs no longer exist on
+Groq's side — this is a genuine registry-drift bug, not an intent/config
+issue. On top of that:
 
-- **Vision testing fix**: "Vision" category select karne pe ab image upload
-  field dikhta hai (tap-to-upload + drag-drop, preview, remove button). Image
-  automatically base64 data URL me convert hoke request ke saath OpenAI-style
-  multi-part `content` array me jaata hai — backend ka format already yahi
-  expect karta tha, sirf UI se koi rasta nahi tha image bhejne ka.
-- **Documentation fix**: "Use from anywhere" section ab tabs ke saath saari 4
-  categories (Text, Vision, Multilingual, Image Gen) ka curl example dikhata
-  hai, har ek ke saath ek-line note ki us category ka request/response shape
-  baaki se kaise alag hai. Copy button bhi add kiya.
-- **Mobile responsive**: purani UI fixed-width inline `gridTemplateColumns`
-  table use karti thi jo chhoti screen pe toot jaati thi. Ab real CSS
-  (`styles/globals.css`) hai — category picker ek segmented control hai (no
-  dropdown-hunting on mobile), model list cards me hai (table nahi), sab kuch
-  320px se upar properly stack/wrap karta hai.
-- UI/UX polish: loading spinners, disabled states jab tak required fields
-  (master key, image jab vision selected ho) na bhare ho, error messages
-  saaf dikhte hain, focus states keyboard users ke liye.
+- `gemini-2.0-flash` in the Google section was **shut down June 1, 2026** —
+  a dead model sitting in the candidate list, guaranteed to fail.
+- `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` (Groq text models)
+  are also deprecated (announced Jun 17, 2026) — this wasn't causing visible
+  failures because text/multimodal still had other working candidates
+  (Cloudflare), but they were dead weight burning through router attempts.
+- Cloudflare's vision model (`@cf/meta/llama-3.2-11b-vision-instruct`) is
+  still live and free, but Cloudflare requires a **one-time per-account
+  license acceptance** before it actually serves image requests. **Action
+  needed from you**: for every `CF_KEY_N` / `CF_ACCOUNT_ID_N` pair
+  configured in Vercel, run this once —
+  ```
+  curl https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/ai/run/@cf/meta/llama-3.2-11b-vision-instruct \
+    -H "Authorization: Bearer $CF_TOKEN" -d '{"prompt":"agree"}'
+  ```
+  Until you do this per account, that one candidate will keep failing even
+  though the code and model ID are both correct — everything else in the
+  registry fix should already get you a working vision response from Groq,
+  Google, or OpenRouter before it ever reaches Cloudflare in the fallback
+  order.
 
-Agar aage router/registry/adapters me changes chahiye (naye providers, model
-list update, etc.) wo is pass me nahi chhue gaye — sirf UI improve hui hai.
+**Registry fixes (`lib/registry.js`)**: removed every dead model above,
+replaced Groq's vision slot with `qwen/qwen3.6-27b` (Groq's own recommended
+migration target — a single free, current, Preview-tier model that natively
+does text + image in, text out), replaced Groq's text slot with
+`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, replaced `gemini-2.0-flash`
+with `gemini-3-flash-preview` alongside the still-valid `gemini-2.5-flash`
+and `gemini-2.5-flash-lite`.
+
+**"Multilingual" → "Multimodal"**: the old `multilingual` category was
+functionally redundant with `text` (most text models here have decent
+multilingual output anyway). Replaced it with what was actually wanted — a
+`multimodal` category for models where text+image is one native model
+rather than two separate calls. Currently routes to `qwen/qwen3.6-27b`
+(Groq), the Gemini Flash models, and the OpenRouter/Cloudflare vision
+models — anywhere a single model genuinely does both. `pages/index.js`'s
+UI, docs tabs, and curl examples were all updated to match; the image
+upload flow now works for both the Vision and Multimodal tabs.
+
+**Also fixed**: `lib/adapters.js`'s Google adapter was hardcoding
+`mime_type: "image/jpeg"` for every uploaded image regardless of actual
+file type — harmless for `.jpg` uploads (which is why your test looked
+fine on the working providers) but would silently mislabel PNG/WebP
+uploads sent to Google. Now parses the real mime type out of the data URL.
+
+## Round 1: UI/UX pass
+
+Backend (`lib/`, `pages/api/`) unchanged in round 1 — `pages/index.js` UI was
+rewritten for image upload support, full docs coverage of every category,
+and mobile responsiveness via a real `styles/globals.css` instead of fixed
+inline-style grids.
 
 ## Kaise kaam karta hai
 
