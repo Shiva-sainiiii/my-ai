@@ -31,11 +31,20 @@ Failover fully automatic hai — aapko kuch bhi manually switch nahi karna.
 
 ## Setup (5 steps)
 
-### 1. Vercel KV database banao
-Vercel dashboard > apna project > **Storage** tab > **Create Database** >
-**KV**. Ye connect hote hi env vars (`KV_URL` etc.) apne aap set ho jaate hain.
+### 1. Redis database banao
+Vercel dashboard > apna project > **Storage** tab > **Browse Storage** >
+**Redis** (marketplace integration). Connect karte waqt jo "Custom Prefix"
+poochta hai wahan `KV` bhar dena (default `STORAGE` ko replace karke) — code
+`KV_REDIS_URL` (ya `REDIS_URL`/`KV_URL`, jo bhi mile) env var dhoondta hai.
 
-**Ye zaroori hai** — serverless functions stateless hote hain, so rate-limit
+**⚠️ Sep 2026 se Vercel ka Redis integration sirf ek raw connection string
+deta hai** (`KV_<PREFIX>_URL`, jaisे `redis://default:xxx@host:6379`) — purana
+"Vercel KV" product jo REST API vars (`KV_REST_API_URL`/`TOKEN`) deta tha, wo
+ab standalone nahi hai. Isliye ye gateway `@vercel/kv` ke bajaye standard
+`redis` (node-redis) npm package use karta hai, jo TCP connection string se
+seedha connect hota hai — koi extra REST vars nahi chahiye.
+
+**Ye step zaroori hai** — serverless functions stateless hote hain, so rate-limit
 tracking (kitne requests already ho chuke is minute/day me) ke liye ek shared
 persistent store chahiye. Bina iske, "next key pe switch ho jaye" wala feature
 reliably kaam nahi karega.
