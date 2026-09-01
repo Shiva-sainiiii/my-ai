@@ -7,7 +7,7 @@ const { REGISTRY } = require("../../../lib/registry");
  * set in env vars), grouped by provider, with category + limit info.
  * Useful for a dashboard, or just to sanity-check your setup.
  */
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const auth = checkMasterKey(req);
   if (!auth.ok) {
     return res.status(auth.status).json({ error: auth.message });
@@ -37,4 +37,4 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(200).json({ object: "list", data: out });
-};
+}

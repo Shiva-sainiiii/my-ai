@@ -21,7 +21,7 @@ const { routeRequest } = require("../../../../lib/router");
  *       { "type": "image_url", "image_url": { "url": "data:image/jpeg;base64,..." } }
  *   ]}
  */
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
@@ -64,4 +64,4 @@ module.exports = async function handler(req, res) {
   res.setHeader("X-Gateway-Key-Used", result.keyUsed);
 
   return res.status(200).json(result.data);
-};
+}

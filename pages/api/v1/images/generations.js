@@ -13,7 +13,7 @@ const { routeRequest } = require("../../../../lib/router");
  *   "response_format": "b64_json"                 // only b64_json supported for now
  * }
  */
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
@@ -50,4 +50,4 @@ module.exports = async function handler(req, res) {
     created: Math.floor(Date.now() / 1000),
     data: [{ b64_json: result.data.image_base64 }],
   });
-};
+}
